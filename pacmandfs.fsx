@@ -5,8 +5,6 @@ let WALL = '%'
 let EMPTY = '-'
 let PACMAN = 'P'
 let FOOD = '.'
-let NO_MOVE = (-1, -1)
-
 
 // read input board, player and board size
 let (pacman, food, (boardHeight, boardWidth), board) = 
@@ -19,19 +17,27 @@ let (pacman, food, (boardHeight, boardWidth), board) =
     let board = List.init (fst(boardSize)) (fun _ -> Console.ReadLine())    
     pacman, food, boardSize, board
 
-let visit prevs stack = 
+// DFS visit
+let visit (prevs: Map<int*int, int*int>) stack = 
     let neighbors (posR, posC) = 
-        let rMin, rMax = max (posR-1) 0, min (posR+1) (boardHeight-1)
-        let cMin, cMax = max (posC-1) 0, min (posC+1) (boardWidth-1)
-        seq {
-            for i = rMin to rMax do
-                for j = cMin to cMax do
+        //[(-1, 0); (0, -1); (0, 1); (1, 0)]
+        [(1, 0); (0, 1); (0, -1); (-1, 0)]
+        |> List.map (fun (r, c) -> (r + posR, c + posC))
+        |> List.filter (fun (r, c) -> (r >= 0 && r < boardHeight && c >=0 && c < boardWidth) && 
+                                      (board.[r].[c] = EMPTY || board.[r].[c] = FOOD) &&
+                                      (not (Map.containsKey (r, c) prevs)))    
 
-        } |> List.ofSeq
-
+    let findPath (prevs: Map<int*int, int*int>) stack =
+        [(0, 0)]
+    
     match stack with
-    | s :: ss -> Some 1
-    | [] -> None
+    | s :: ss -> if s = food then 
+                        (findPath prevs stack) 
+                    else
+                        let nodeNeighbors = neighbors s
+                        let newPrevs = List.fold (fun acc nr -> Map.add nr s acc) prevs nodeNeighbors
+                        findPath (prevs) (nodeNeighbors @ stack)
+    | [] -> failwith "no path found (search stack empty)!"
 
 
 //// grid
