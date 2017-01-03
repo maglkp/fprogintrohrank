@@ -18,31 +18,37 @@ let (pacman, food, (boardHeight, boardWidth), board) =
     pacman, food, boardSize, board
 
 // DFS visit
-let visit (prevs: Map<int*int, int*int>) stack = 
+let rec visit (prevs: Map<int*int, int*int>) stack visited = 
     let neighbors (posR, posC) = 
-        //[(-1, 0); (0, -1); (0, 1); (1, 0)]
         [(1, 0); (0, 1); (0, -1); (-1, 0)]
         |> List.map (fun (r, c) -> (r + posR, c + posC))
         |> List.filter (fun (r, c) -> (r >= 0 && r < boardHeight && c >=0 && c < boardWidth) && 
                                       (board.[r].[c] = EMPTY || board.[r].[c] = FOOD) &&
-                                      (not (Map.containsKey (r, c) prevs)))    
+                                      (not (Map.containsKey (r, c) prevs)))
 
-    let findPath (prevs: Map<int*int, int*int>) stack =
-        [(0, 0)]
+    let findPath (prevs: Map<int*int, int*int>) =
+        let rec find (prevs: Map<int*int, int*int>) acc element =
+            if element = pacman then acc
+            else
+                let prev = prevs.[element]
+                find prevs (prev :: acc) prev
+        find prevs [food] food        
     
     match stack with
     | s :: ss -> if s = food then 
-                        (findPath prevs stack) 
+                        findPath prevs, List.rev (s :: visited)
                     else
                         let nodeNeighbors = neighbors s
                         let newPrevs = List.fold (fun acc nr -> Map.add nr s acc) prevs nodeNeighbors
-                        findPath (prevs) (nodeNeighbors @ stack)
+                        visit newPrevs (nodeNeighbors @ stack) (s :: visited)
     | [] -> failwith "no path found (search stack empty)!"
 
+let printList xs =     
+    List.iter (fun e -> printfn "%d %d" (fst(e)) (snd(e))) xs
 
-//// grid
-//visit prevs stack =
-//    if goal(stack.head)
-//        Some stack.head, prevs
-//    else
-//        visit (prevs + ns(stack.head, prevs))
+let (path, visited) = visit (Map.empty.Add(pacman, pacman)) [pacman] []
+
+printfn "%d" (List.length visited)
+printList visited
+printfn "%d" ((List.length path) - 1)
+printList path
